@@ -1,0 +1,144 @@
+
+======================================================================
+1. COLUMN PROFILE (blank = empty or spaces; '?' = explicit unknown)
+======================================================================
+Columns with blank or '?' values:
+   table    column    rows  blank  question_mark
+   order  k_symbol    6471   1379              0
+   trans operation 1056320 183114              0
+   trans  k_symbol 1056320 535314              0
+   trans      bank 1056320 782812              0
+   trans   account 1056320 760931              0
+district       A12      77      0              1
+district       A15      77      0              1
+Full per-column profile saved to docs/column_profile.csv
+
+======================================================================
+2. PRIMARY KEYS AND DUPLICATE ROWS
+======================================================================
+account   key=account_id  duplicate keys=0      rows identical apart from the key=153
+client    key=client_id   duplicate keys=0      rows identical apart from the key=26
+disp      key=disp_id     duplicate keys=0      rows identical apart from the key=0
+order     key=order_id    duplicate keys=0      rows identical apart from the key=0
+trans     key=trans_id    duplicate keys=0      rows identical apart from the key=1
+loan      key=loan_id     duplicate keys=0      rows identical apart from the key=0
+card      key=card_id     duplicate keys=0      rows identical apart from the key=0
+district  key=A1          duplicate keys=0      rows identical apart from the key=0
+Note: identical rows apart from the key are not automatically errors (e.g. two equal payments on one day). They are flagged for review.
+
+======================================================================
+3. REFERENTIAL INTEGRITY (orphans = child rows with no parent)
+======================================================================
+account.district_id -> district.A1: orphans=0
+client.district_id -> district.A1: orphans=0
+disp.client_id -> client.client_id: orphans=0
+disp.account_id -> account.account_id: orphans=0
+order.account_id -> account.account_id: orphans=0
+trans.account_id -> account.account_id: orphans=0
+loan.account_id -> account.account_id: orphans=0
+card.disp_id -> disp.disp_id: orphans=0
+
+======================================================================
+4. CARDINALITY (join fan-out risks)
+======================================================================
+Max loans per account: 1 (documentation says at most 1)
+Disposition types: {'OWNER': 4500, 'DISPONENT': 869}
+Accounts with exactly 1 owner: 4500 of 4500
+Accounts with more than 1 owner: 0
+Accounts with no owner: 0
+Accounts by number of linked clients (owner + users): {1: 3631, 2: 869}
+Clients who own more than one account: 0
+Max cards per disposition: 1
+Cards issued to non-owner dispositions: 0
+
+======================================================================
+5. CATEGORY VALUES (counts, blanks shown as <blank>)
+======================================================================
+account.frequency: 'POPLATEK MESICNE'=4167, 'POPLATEK TYDNE'=240, 'POPLATEK PO OBRATU'=93
+disp.type: 'OWNER'=4500, 'DISPONENT'=869
+trans.type: 'VYDAJ'=634571, 'PRIJEM'=405083, 'VYBER'=16666
+trans.operation: 'VYBER'=434918, 'PREVOD NA UCET'=208283, '<blank>'=183114, 'VKLAD'=156743, 'PREVOD Z UCTU'=65226, 'VYBER KARTOU'=8036
+trans.k_symbol: '<blank>'=481881, 'UROK'=183114, 'SLUZBY'=155832, 'SIPO'=118065, ' '=53433, 'DUCHOD'=30338, 'POJISTNE'=18500, 'UVER'=13580, 'SANKC. UROK'=1577
+order.k_symbol: 'SIPO'=3502, ' '=1379, 'UVER'=717, 'POJISTNE'=532, 'LEASING'=341
+loan.status: 'C'=403, 'A'=203, 'D'=45, 'B'=31
+loan.duration: '60'=145, '24'=138, '48'=138, '12'=131, '36'=130
+card.type: 'classic'=659, 'junior'=145, 'gold'=88
+district.A3: 'south Moravia'=14, 'central Bohemia'=12, 'east Bohemia'=11, 'north Moravia'=11, 'west Bohemia'=10, 'north Bohemia'=10, 'south Bohemia'=8, 'Prague'=1
+
+======================================================================
+6. DATES (format, unparseable values, range)
+======================================================================
+account.date: text lengths={6: 4500}  unparseable=0  min=1993-01-01  max=1997-12-29
+trans.date: text lengths={6: 1056320}  unparseable=0  min=1993-01-01  max=1998-12-31
+loan.date: text lengths={6: 682}  unparseable=0  min=1993-07-05  max=1998-12-08
+card.issued: text lengths={15: 892}  unparseable=0  min=1993-11-07  max=1998-12-29
+
+======================================================================
+7. NUMERIC COLUMNS (non-numeric text, min, max)
+======================================================================
+order.amount: non-numeric=0   min=1.0  max=14882.0
+trans.amount: non-numeric=0   min=0.0  max=87400.0
+trans.balance: non-numeric=0   min=-41125.7  max=209637.0
+loan.amount: non-numeric=0   min=4980  max=590820
+loan.duration: non-numeric=0   min=12  max=60
+loan.payments: non-numeric=0   min=304.0  max=9910.0
+district.A4: non-numeric=0   min=42821  max=1204953
+district.A5: non-numeric=0   min=0  max=151
+district.A6: non-numeric=0   min=0  max=70
+district.A7: non-numeric=0   min=0  max=20
+district.A8: non-numeric=0   min=0  max=5
+district.A9: non-numeric=0   min=1  max=11
+district.A10: non-numeric=0   min=33.9  max=100.0
+district.A11: non-numeric=0   min=8110  max=12541
+district.A12: non-numeric=1 ['?']  min=0.29  max=7.34
+district.A13: non-numeric=0   min=0.43  max=9.4
+district.A14: non-numeric=0   min=81  max=167
+district.A15: non-numeric=1 ['?']  min=818.0  max=85677.0
+district.A16: non-numeric=0   min=888  max=99107
+
+Transactions with negative balance after them: 2999
+Transactions with amount <= 0: 14
+
+======================================================================
+8. BUSINESS RULE CHECKS
+======================================================================
+Loans where amount = payments x duration (within 1 unit): 682 of 682
+If this is all loans, the data contains no interest information.
+birth_number: female (month > 50)=2645  male=2724  invalid month/day=0
+Birth years range: 1911 to 1987
+Accounts with loan-payment transactions ('UVER'): 682
+...of which have no loan record (anti-join): 0
+
+======================================================================
+9. POINT-IN-TIME COVERAGE (history available before each loan)
+======================================================================
+Days from account opening to loan:
+count    682.0
+mean     398.2
+std      164.6
+min      102.0
+25%      261.2
+50%      395.5
+75%      528.8
+max      697.0
+
+Loans with zero transactions before the loan date: 0
+Transactions before the loan date, per loan:
+count    682.0
+mean      80.2
+std       44.8
+min        2.0
+25%       45.0
+50%       77.0
+75%      112.0
+max      218.0
+
+Last transaction date in the whole dataset: 1998-12-31
+
+Loan status counts and median pre-loan history:
+        loans  median_days_acc_to_loan  median_trans_before
+status                                                     
+A         203                    365.0                 71.0
+B          31                    307.0                 58.0
+C         403                    417.0                 81.0
+D          45                    401.0                 82.0
