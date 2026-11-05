@@ -1,170 +1,78 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 1,
-   "id": "11369a4d-6dc7-4918-a72d-4a1efe146ce6",
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "SQL Server ODBC drivers found: ['SQL Server', 'ODBC Driver 17 for SQL Server', 'ODBC Driver 18 for SQL Server']\n",
-      "Using driver: ODBC Driver 18 for SQL Server\n",
-      "rows (expect 682)              682\n",
-      "unique loans (expect 682)      682\n",
-      "problem loans (expect 76)      76\n",
-      "finished loans (expect 234)    234\n",
-      "columns                        37\n",
-      "\n",
-      "EXPORT OK\n",
-      "\n",
-      "Columns (type, missing values):\n",
-      "                               dtype  missing\n",
-      "loan_id                        int64        0\n",
-      "account_id                     int64        0\n",
-      "grant_date                       str        0\n",
-      "grant_year                     int64        0\n",
-      "loan_amount                  float64        0\n",
-      "duration_months                int64        0\n",
-      "monthly_payment              float64        0\n",
-      "status                           str        0\n",
-      "status_desc                      str        0\n",
-      "contract_state                   str        0\n",
-      "is_problem                     int64        0\n",
-      "months_observed                int64        0\n",
-      "statement_frequency              str        0\n",
-      "account_age_days               int64        0\n",
-      "owner_client_id                int64        0\n",
-      "owner_gender                     str        0\n",
-      "owner_age_at_grant             int64        0\n",
-      "n_authorized_users             int64        0\n",
-      "had_card_before_grant          int64        0\n",
-      "card_type_before_grant           str        0\n",
-      "district_name                    str        0\n",
-      "region                           str        0\n",
-      "district_avg_salary            int64        0\n",
-      "district_unemployment_96     float64        0\n",
-      "district_crimes_per_1000_96  float64        0\n",
-      "district_urban_ratio_pct     float64        0\n",
-      "n_trans_90d                    int64        0\n",
-      "credits_90d                  float64        0\n",
-      "debits_90d                   float64        0\n",
-      "net_flow_90d                 float64        0\n",
-      "avg_monthly_credits_90d      float64        0\n",
-      "min_balance_90d              float64        0\n",
-      "avg_balance_90d              float64        0\n",
-      "n_negative_balance_90d         int64        0\n",
-      "had_negative_balance_90d       int64        0\n",
-      "n_penalty_interest_90d         int64        0\n",
-      "payment_to_credits_ratio     float64        0\n",
-      "\n",
-      "Saved data\\processed\\loan_features.csv\n"
-     ]
-    }
-   ],
-   "source": [
-    "\"\"\"\n",
-    "Step 5 - Export mart.loan_features from SQL Server to CSV for Tableau.\n",
-    "\n",
-    "Tableau Desktop Public Edition connects to files, not to SQL Server,\n",
-    "so the mart is exported once and validated.\n",
-    "\n",
-    "Input  : BankAnalytics.mart.loan_features (SQL Server)\n",
-    "Output : data/processed/loan_features.csv\n",
-    "\n",
-    "Run from the project root:\n",
-    "    python scripts/05_export_mart.py\n",
-    "\"\"\"\n",
-    "\n",
-    "import os\n",
-    "import warnings\n",
-    "\n",
-    "import pandas as pd\n",
-    "import pyodbc\n",
-    "\n",
-    "# Must match the server name you use in SSMS.\n",
-    "SERVER = r\"MANI\\SQLEXPRESS\"\n",
-    "DATABASE = \"BankAnalytics\"\n",
-    "OUT_DIR = os.path.join(\"data\", \"processed\")\n",
-    "OUT_FILE = os.path.join(OUT_DIR, \"loan_features.csv\")\n",
-    "\n",
-    "# 1. Pick the newest SQL Server ODBC driver installed on this PC\n",
-    "installed = pyodbc.drivers()\n",
-    "preferred = [\"ODBC Driver 18 for SQL Server\", \"ODBC Driver 17 for SQL Server\", \"SQL Server\"]\n",
-    "driver = next((d for d in preferred if d in installed), None)\n",
-    "print(\"SQL Server ODBC drivers found:\", [d for d in installed if \"SQL Server\" in d])\n",
-    "if driver is None:\n",
-    "    raise SystemExit(\"No SQL Server ODBC driver found. Install 'ODBC Driver 18 for SQL Server'.\")\n",
-    "print(\"Using driver:\", driver)\n",
-    "\n",
-    "# 2. Connect with Windows Authentication (no password in the code)\n",
-    "conn_str = (\n",
-    "    f\"DRIVER={{{driver}}};SERVER={SERVER};DATABASE={DATABASE};\"\n",
-    "    \"Trusted_Connection=yes;\"\n",
-    ")\n",
-    "if driver.startswith(\"ODBC Driver 18\"):\n",
-    "    # Driver 18 encrypts by default; a local Express instance uses a\n",
-    "    # self-signed certificate, so it must be trusted explicitly.\n",
-    "    conn_str += \"TrustServerCertificate=yes;\"\n",
-    "\n",
-    "conn = pyodbc.connect(conn_str)\n",
-    "\n",
-    "# 3. Read the mart (pandas warns about raw DBAPI connections; harmless here)\n",
-    "with warnings.catch_warnings():\n",
-    "    warnings.simplefilter(\"ignore\", UserWarning)\n",
-    "    df = pd.read_sql(\"SELECT * FROM mart.loan_features ORDER BY loan_id\", conn)\n",
-    "conn.close()\n",
-    "\n",
-    "# 4. Write the CSV (empty cells for NULL, not the text 'NULL')\n",
-    "os.makedirs(OUT_DIR, exist_ok=True)\n",
-    "df.to_csv(OUT_FILE, index=False, encoding=\"utf-8\")\n",
-    "\n",
-    "# 5. Validate the file that was actually written, not the DataFrame in memory\n",
-    "check = pd.read_csv(OUT_FILE)\n",
-    "results = {\n",
-    "    \"rows (expect 682)\": len(check),\n",
-    "    \"unique loans (expect 682)\": check[\"loan_id\"].nunique(),\n",
-    "    \"problem loans (expect 76)\": int(check[\"is_problem\"].sum()),\n",
-    "    \"finished loans (expect 234)\": int((check[\"contract_state\"] == \"Finished\").sum()),\n",
-    "    \"columns\": check.shape[1],\n",
-    "}\n",
-    "for k, v in results.items():\n",
-    "    print(f\"{k:30s} {v}\")\n",
-    "\n",
-    "ok = (results[\"rows (expect 682)\"] == 682\n",
-    "      and results[\"unique loans (expect 682)\"] == 682\n",
-    "      and results[\"problem loans (expect 76)\"] == 76\n",
-    "      and results[\"finished loans (expect 234)\"] == 234)\n",
-    "print(\"\\nEXPORT OK\" if ok else \"\\nEXPORT MISMATCH - do not use this file\")\n",
-    "\n",
-    "print(\"\\nColumns (type, missing values):\")\n",
-    "summary = pd.DataFrame({\"dtype\": check.dtypes.astype(str), \"missing\": check.isna().sum()})\n",
-    "print(summary.to_string())\n",
-    "print(f\"\\nSaved {OUT_FILE}\")"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.14.6"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
+"""
+Step 5 - Export mart.loan_features from SQL Server to CSV for Tableau.
+
+Tableau Desktop Public Edition connects to files, not to SQL Server,
+so the mart is exported once and validated.
+
+Input  : BankAnalytics.mart.loan_features (SQL Server)
+Output : data/processed/loan_features.csv
+
+Run from the project root:
+    python scripts/05_export_mart.py
+"""
+
+import os
+import warnings
+
+import pandas as pd
+import pyodbc
+
+# Server name as shown in SSMS. Override without editing: set SQL_SERVER=MANI\SQLEXPRESS
+SERVER = os.environ.get("SQL_SERVER", r"localhost\SQLEXPRESS")
+DATABASE = "BankAnalytics"
+OUT_DIR = os.path.join("data", "processed")
+OUT_FILE = os.path.join(OUT_DIR, "loan_features.csv")
+
+# 1. Pick the newest SQL Server ODBC driver installed on this PC
+installed = pyodbc.drivers()
+preferred = ["ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server", "SQL Server"]
+driver = next((d for d in preferred if d in installed), None)
+print("SQL Server ODBC drivers found:", [d for d in installed if "SQL Server" in d])
+if driver is None:
+    raise SystemExit("No SQL Server ODBC driver found. Install 'ODBC Driver 18 for SQL Server'.")
+print("Using driver:", driver)
+
+# 2. Connect with Windows Authentication (no password in the code)
+conn_str = (
+    f"DRIVER={{{driver}}};SERVER={SERVER};DATABASE={DATABASE};"
+    "Trusted_Connection=yes;"
+)
+if driver.startswith("ODBC Driver 18"):
+    # Driver 18 encrypts by default; a local Express instance uses a
+    # self-signed certificate, so it must be trusted explicitly.
+    conn_str += "TrustServerCertificate=yes;"
+
+conn = pyodbc.connect(conn_str)
+
+# 3. Read the mart (pandas warns about raw DBAPI connections; harmless here)
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", UserWarning)
+    df = pd.read_sql("SELECT * FROM mart.loan_features ORDER BY loan_id", conn)
+conn.close()
+
+# 4. Write the CSV (empty cells for NULL, not the text 'NULL')
+os.makedirs(OUT_DIR, exist_ok=True)
+df.to_csv(OUT_FILE, index=False, encoding="utf-8")
+
+# 5. Validate the file that was actually written, not the DataFrame in memory
+check = pd.read_csv(OUT_FILE)
+results = {
+    "rows (expect 682)": len(check),
+    "unique loans (expect 682)": check["loan_id"].nunique(),
+    "problem loans (expect 76)": int(check["is_problem"].sum()),
+    "finished loans (expect 234)": int((check["contract_state"] == "Finished").sum()),
+    "columns": check.shape[1],
 }
+for k, v in results.items():
+    print(f"{k:30s} {v}")
+
+ok = (results["rows (expect 682)"] == 682
+      and results["unique loans (expect 682)"] == 682
+      and results["problem loans (expect 76)"] == 76
+      and results["finished loans (expect 234)"] == 234)
+print("\nEXPORT OK" if ok else "\nEXPORT MISMATCH - do not use this file")
+
+print("\nColumns (type, missing values):")
+summary = pd.DataFrame({"dtype": check.dtypes.astype(str), "missing": check.isna().sum()})
+print(summary.to_string())
+print(f"\nSaved {OUT_FILE}")

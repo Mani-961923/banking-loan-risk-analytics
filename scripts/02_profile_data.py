@@ -1,465 +1,227 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 1,
-   "id": "bfb0f68e-7ce9-4bfa-bfa1-fb6b6f955f88",
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "\n",
-      "======================================================================\n",
-      "1. COLUMN PROFILE (blank = empty or spaces; '?' = explicit unknown)\n",
-      "======================================================================\n",
-      "Columns with blank or '?' values:\n",
-      "   table    column    rows  blank  question_mark\n",
-      "   order  k_symbol    6471   1379              0\n",
-      "   trans operation 1056320 183114              0\n",
-      "   trans  k_symbol 1056320 535314              0\n",
-      "   trans      bank 1056320 782812              0\n",
-      "   trans   account 1056320 760931              0\n",
-      "district       A12      77      0              1\n",
-      "district       A15      77      0              1\n",
-      "Full per-column profile saved to docs/column_profile.csv\n",
-      "\n",
-      "======================================================================\n",
-      "2. PRIMARY KEYS AND DUPLICATE ROWS\n",
-      "======================================================================\n",
-      "account   key=account_id  duplicate keys=0      rows identical apart from the key=153\n",
-      "client    key=client_id   duplicate keys=0      rows identical apart from the key=26\n",
-      "disp      key=disp_id     duplicate keys=0      rows identical apart from the key=0\n",
-      "order     key=order_id    duplicate keys=0      rows identical apart from the key=0\n",
-      "trans     key=trans_id    duplicate keys=0      rows identical apart from the key=1\n",
-      "loan      key=loan_id     duplicate keys=0      rows identical apart from the key=0\n",
-      "card      key=card_id     duplicate keys=0      rows identical apart from the key=0\n",
-      "district  key=A1          duplicate keys=0      rows identical apart from the key=0\n",
-      "Note: identical rows apart from the key are not automatically errors (e.g. two equal payments on one day). They are flagged for review.\n",
-      "\n",
-      "======================================================================\n",
-      "3. REFERENTIAL INTEGRITY (orphans = child rows with no parent)\n",
-      "======================================================================\n",
-      "account.district_id -> district.A1: orphans=0\n",
-      "client.district_id -> district.A1: orphans=0\n",
-      "disp.client_id -> client.client_id: orphans=0\n",
-      "disp.account_id -> account.account_id: orphans=0\n",
-      "order.account_id -> account.account_id: orphans=0\n",
-      "trans.account_id -> account.account_id: orphans=0\n",
-      "loan.account_id -> account.account_id: orphans=0\n",
-      "card.disp_id -> disp.disp_id: orphans=0\n",
-      "\n",
-      "======================================================================\n",
-      "4. CARDINALITY (join fan-out risks)\n",
-      "======================================================================\n",
-      "Max loans per account: 1 (documentation says at most 1)\n",
-      "Disposition types: {'OWNER': 4500, 'DISPONENT': 869}\n",
-      "Accounts with exactly 1 owner: 4500 of 4500\n",
-      "Accounts with more than 1 owner: 0\n",
-      "Accounts with no owner: 0\n",
-      "Accounts by number of linked clients (owner + users): {1: 3631, 2: 869}\n",
-      "Clients who own more than one account: 0\n",
-      "Max cards per disposition: 1\n",
-      "Cards issued to non-owner dispositions: 0\n",
-      "\n",
-      "======================================================================\n",
-      "5. CATEGORY VALUES (counts, blanks shown as <blank>)\n",
-      "======================================================================\n",
-      "account.frequency: 'POPLATEK MESICNE'=4167, 'POPLATEK TYDNE'=240, 'POPLATEK PO OBRATU'=93\n",
-      "disp.type: 'OWNER'=4500, 'DISPONENT'=869\n",
-      "trans.type: 'VYDAJ'=634571, 'PRIJEM'=405083, 'VYBER'=16666\n",
-      "trans.operation: 'VYBER'=434918, 'PREVOD NA UCET'=208283, '<blank>'=183114, 'VKLAD'=156743, 'PREVOD Z UCTU'=65226, 'VYBER KARTOU'=8036\n",
-      "trans.k_symbol: '<blank>'=481881, 'UROK'=183114, 'SLUZBY'=155832, 'SIPO'=118065, ' '=53433, 'DUCHOD'=30338, 'POJISTNE'=18500, 'UVER'=13580, 'SANKC. UROK'=1577\n",
-      "order.k_symbol: 'SIPO'=3502, ' '=1379, 'UVER'=717, 'POJISTNE'=532, 'LEASING'=341\n",
-      "loan.status: 'C'=403, 'A'=203, 'D'=45, 'B'=31\n",
-      "loan.duration: '60'=145, '24'=138, '48'=138, '12'=131, '36'=130\n",
-      "card.type: 'classic'=659, 'junior'=145, 'gold'=88\n",
-      "district.A3: 'south Moravia'=14, 'central Bohemia'=12, 'east Bohemia'=11, 'north Moravia'=11, 'west Bohemia'=10, 'north Bohemia'=10, 'south Bohemia'=8, 'Prague'=1\n",
-      "\n",
-      "======================================================================\n",
-      "6. DATES (format, unparseable values, range)\n",
-      "======================================================================\n",
-      "account.date: text lengths={6: 4500}  unparseable=0  min=1993-01-01  max=1997-12-29\n",
-      "trans.date: text lengths={6: 1056320}  unparseable=0  min=1993-01-01  max=1998-12-31\n",
-      "loan.date: text lengths={6: 682}  unparseable=0  min=1993-07-05  max=1998-12-08\n",
-      "card.issued: text lengths={15: 892}  unparseable=0  min=1993-11-07  max=1998-12-29\n",
-      "\n",
-      "======================================================================\n",
-      "7. NUMERIC COLUMNS (non-numeric text, min, max)\n",
-      "======================================================================\n",
-      "order.amount: non-numeric=0   min=1.0  max=14882.0\n",
-      "trans.amount: non-numeric=0   min=0.0  max=87400.0\n",
-      "trans.balance: non-numeric=0   min=-41125.7  max=209637.0\n",
-      "loan.amount: non-numeric=0   min=4980  max=590820\n",
-      "loan.duration: non-numeric=0   min=12  max=60\n",
-      "loan.payments: non-numeric=0   min=304.0  max=9910.0\n",
-      "district.A4: non-numeric=0   min=42821  max=1204953\n",
-      "district.A5: non-numeric=0   min=0  max=151\n",
-      "district.A6: non-numeric=0   min=0  max=70\n",
-      "district.A7: non-numeric=0   min=0  max=20\n",
-      "district.A8: non-numeric=0   min=0  max=5\n",
-      "district.A9: non-numeric=0   min=1  max=11\n",
-      "district.A10: non-numeric=0   min=33.9  max=100.0\n",
-      "district.A11: non-numeric=0   min=8110  max=12541\n",
-      "district.A12: non-numeric=1 ['?']  min=0.29  max=7.34\n",
-      "district.A13: non-numeric=0   min=0.43  max=9.4\n",
-      "district.A14: non-numeric=0   min=81  max=167\n",
-      "district.A15: non-numeric=1 ['?']  min=818.0  max=85677.0\n",
-      "district.A16: non-numeric=0   min=888  max=99107\n",
-      "\n",
-      "Transactions with negative balance after them: 2999\n",
-      "Transactions with amount <= 0: 14\n",
-      "\n",
-      "======================================================================\n",
-      "8. BUSINESS RULE CHECKS\n",
-      "======================================================================\n",
-      "Loans where amount = payments x duration (within 1 unit): 682 of 682\n",
-      "If this is all loans, the data contains no interest information.\n",
-      "birth_number: female (month > 50)=2645  male=2724  invalid month/day=0\n",
-      "Birth years range: 1911 to 1987\n",
-      "Accounts with loan-payment transactions ('UVER'): 682\n",
-      "...of which have no loan record (anti-join): 0\n",
-      "\n",
-      "======================================================================\n",
-      "9. POINT-IN-TIME COVERAGE (history available before each loan)\n",
-      "======================================================================\n",
-      "Days from account opening to loan:\n",
-      "count    682.0\n",
-      "mean     398.2\n",
-      "std      164.6\n",
-      "min      102.0\n",
-      "25%      261.2\n",
-      "50%      395.5\n",
-      "75%      528.8\n",
-      "max      697.0\n",
-      "\n",
-      "Loans with zero transactions before the loan date: 0\n",
-      "Transactions before the loan date, per loan:\n",
-      "count    682.0\n",
-      "mean      80.2\n",
-      "std       44.8\n",
-      "min        2.0\n",
-      "25%       45.0\n",
-      "50%       77.0\n",
-      "75%      112.0\n",
-      "max      218.0\n",
-      "\n",
-      "Last transaction date in the whole dataset: 1998-12-31\n",
-      "\n",
-      "Loan status counts and median pre-loan history:\n",
-      "        loans  median_days_acc_to_loan  median_trans_before\n",
-      "status                                                     \n",
-      "A         203                    365.0                 71.0\n",
-      "B          31                    307.0                 58.0\n",
-      "C         403                    417.0                 81.0\n",
-      "D          45                    401.0                 82.0\n",
-      "\n",
-      "Saved docs/data_quality_report.txt and docs/column_profile.csv\n"
-     ]
-    }
-   ],
-   "source": [
-    "\"\"\"\n",
-    "Step 2 - Data profiling and data-quality assessment for the Berka dataset.\n",
-    "\n",
-    "Input  : data/raw/<table>.csv   (semicolon-delimited, validated in Step 1b)\n",
-    "Output : docs/data_quality_report.txt   (full printed report)\n",
-    "         docs/column_profile.csv        (one row per table column)\n",
-    "\n",
-    "Run from the project root:\n",
-    "    python scripts/02_profile_data.py\n",
-    "\"\"\"\n",
-    "\n",
-    "import os\n",
-    "\n",
-    "import pandas as pd\n",
-    "\n",
-    "RAW = os.path.join(\"data\", \"raw\")\n",
-    "DOCS = \"docs\"\n",
-    "os.makedirs(DOCS, exist_ok=True)\n",
-    "\n",
-    "TABLES = [\"account\", \"client\", \"disp\", \"order\", \"trans\", \"loan\", \"card\", \"district\"]\n",
-    "PKS = {\"account\": \"account_id\", \"client\": \"client_id\", \"disp\": \"disp_id\",\n",
-    "       \"order\": \"order_id\", \"trans\": \"trans_id\", \"loan\": \"loan_id\",\n",
-    "       \"card\": \"card_id\", \"district\": \"A1\"}\n",
-    "\n",
-    "report = []\n",
-    "\n",
-    "\n",
-    "def say(line=\"\"):\n",
-    "    print(line)\n",
-    "    report.append(str(line))\n",
-    "\n",
-    "\n",
-    "def section(title):\n",
-    "    say()\n",
-    "    say(\"=\" * 70)\n",
-    "    say(title)\n",
-    "    say(\"=\" * 70)\n",
-    "\n",
-    "\n",
-    "def load(name):\n",
-    "    # Everything as text: nothing is converted silently before we look at it.\n",
-    "    return pd.read_csv(os.path.join(RAW, f\"{name}.csv\"), sep=\";\", dtype=str,\n",
-    "                       keep_default_na=False)\n",
-    "\n",
-    "\n",
-    "def parse_yymmdd(s):\n",
-    "    \"\"\"Parse YYMMDD text (optionally followed by a time) into a date.\"\"\"\n",
-    "    return pd.to_datetime(\"19\" + s.str.strip().str[:6], format=\"%Y%m%d\",\n",
-    "                          errors=\"coerce\")\n",
-    "\n",
-    "\n",
-    "def is_blank(s):\n",
-    "    return s.str.strip() == \"\"\n",
-    "\n",
-    "\n",
-    "T = {name: load(name) for name in TABLES}\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"1. COLUMN PROFILE (blank = empty or spaces; '?' = explicit unknown)\")\n",
-    "rows = []\n",
-    "for name, df in T.items():\n",
-    "    for col in df.columns:\n",
-    "        s = df[col]\n",
-    "        top = s.replace(\"\", \"<blank>\").value_counts().head(3)\n",
-    "        rows.append({\n",
-    "            \"table\": name,\n",
-    "            \"column\": col,\n",
-    "            \"rows\": len(s),\n",
-    "            \"blank\": int(is_blank(s).sum()),\n",
-    "            \"question_mark\": int((s.str.strip() == \"?\").sum()),\n",
-    "            \"distinct\": int(s.nunique()),\n",
-    "            \"top_values\": \"; \".join(f\"{k} ({v})\" for k, v in top.items()),\n",
-    "        })\n",
-    "profile = pd.DataFrame(rows)\n",
-    "profile.to_csv(os.path.join(DOCS, \"column_profile.csv\"), index=False)\n",
-    "issues = profile[(profile[\"blank\"] > 0) | (profile[\"question_mark\"] > 0)]\n",
-    "say(\"Columns with blank or '?' values:\")\n",
-    "say(issues[[\"table\", \"column\", \"rows\", \"blank\", \"question_mark\"]].to_string(index=False)\n",
-    "    if len(issues) else \"None\")\n",
-    "say(\"Full per-column profile saved to docs/column_profile.csv\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"2. PRIMARY KEYS AND DUPLICATE ROWS\")\n",
-    "for name, pk in PKS.items():\n",
-    "    df = T[name]\n",
-    "    dup_pk = int(df[pk].duplicated().sum())\n",
-    "    dup_rest = int(df.drop(columns=pk).duplicated().sum())\n",
-    "    say(f\"{name:9s} key={pk:11s} duplicate keys={dup_pk:<6} \"\n",
-    "        f\"rows identical apart from the key={dup_rest}\")\n",
-    "say(\"Note: identical rows apart from the key are not automatically errors \"\n",
-    "    \"(e.g. two equal payments on one day). They are flagged for review.\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"3. REFERENTIAL INTEGRITY (orphans = child rows with no parent)\")\n",
-    "FKS = [(\"account\", \"district_id\", \"district\", \"A1\"),\n",
-    "       (\"client\", \"district_id\", \"district\", \"A1\"),\n",
-    "       (\"disp\", \"client_id\", \"client\", \"client_id\"),\n",
-    "       (\"disp\", \"account_id\", \"account\", \"account_id\"),\n",
-    "       (\"order\", \"account_id\", \"account\", \"account_id\"),\n",
-    "       (\"trans\", \"account_id\", \"account\", \"account_id\"),\n",
-    "       (\"loan\", \"account_id\", \"account\", \"account_id\"),\n",
-    "       (\"card\", \"disp_id\", \"disp\", \"disp_id\")]\n",
-    "for child, ccol, parent, pcol in FKS:\n",
-    "    orphans = int((~T[child][ccol].isin(T[parent][pcol])).sum())\n",
-    "    say(f\"{child}.{ccol} -> {parent}.{pcol}: orphans={orphans}\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"4. CARDINALITY (join fan-out risks)\")\n",
-    "acc, disp, loan, card = T[\"account\"], T[\"disp\"], T[\"loan\"], T[\"card\"]\n",
-    "\n",
-    "loans_per_acc = loan.groupby(\"account_id\").size()\n",
-    "say(f\"Max loans per account: {loans_per_acc.max()} \"\n",
-    "    f\"(documentation says at most 1)\")\n",
-    "\n",
-    "say(\"Disposition types: \" + disp[\"type\"].value_counts().to_dict().__repr__())\n",
-    "owners = disp[disp[\"type\"].str.upper() == \"OWNER\"]\n",
-    "owners_per_acc = owners.groupby(\"account_id\").size()\n",
-    "say(f\"Accounts with exactly 1 owner: {(owners_per_acc == 1).sum()} of {len(acc)}\")\n",
-    "say(f\"Accounts with more than 1 owner: {(owners_per_acc > 1).sum()}\")\n",
-    "say(f\"Accounts with no owner: {(~acc['account_id'].isin(owners['account_id'])).sum()}\")\n",
-    "\n",
-    "disp_per_acc = disp.groupby(\"account_id\").size().value_counts().sort_index()\n",
-    "say(\"Accounts by number of linked clients (owner + users): \"\n",
-    "    + disp_per_acc.to_dict().__repr__())\n",
-    "say(f\"Clients who own more than one account: \"\n",
-    "    f\"{(owners.groupby('client_id').size() > 1).sum()}\")\n",
-    "say(f\"Max cards per disposition: {card.groupby('disp_id').size().max()}\")\n",
-    "say(f\"Cards issued to non-owner dispositions: \"\n",
-    "    f\"{(~card['disp_id'].isin(owners['disp_id'])).sum()}\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"5. CATEGORY VALUES (counts, blanks shown as <blank>)\")\n",
-    "CATS = [(\"account\", \"frequency\"), (\"disp\", \"type\"), (\"trans\", \"type\"),\n",
-    "        (\"trans\", \"operation\"), (\"trans\", \"k_symbol\"), (\"order\", \"k_symbol\"),\n",
-    "        (\"loan\", \"status\"), (\"loan\", \"duration\"), (\"card\", \"type\"),\n",
-    "        (\"district\", \"A3\")]\n",
-    "for t, c in CATS:\n",
-    "    vc = T[t][c].replace(\"\", \"<blank>\").value_counts()\n",
-    "    say(f\"{t}.{c}: \" + \", \".join(f\"'{k}'={v}\" for k, v in vc.items()))\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"6. DATES (format, unparseable values, range)\")\n",
-    "DATES = [(\"account\", \"date\"), (\"trans\", \"date\"), (\"loan\", \"date\"), (\"card\", \"issued\")]\n",
-    "parsed = {}\n",
-    "for t, c in DATES:\n",
-    "    raw = T[t][c]\n",
-    "    d = parse_yymmdd(raw)\n",
-    "    parsed[(t, c)] = d\n",
-    "    lengths = raw.str.len().value_counts().to_dict()\n",
-    "    say(f\"{t}.{c}: text lengths={lengths}  unparseable={int(d.isna().sum())}  \"\n",
-    "        f\"min={d.min().date()}  max={d.max().date()}\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"7. NUMERIC COLUMNS (non-numeric text, min, max)\")\n",
-    "NUMS = [(\"order\", \"amount\"), (\"trans\", \"amount\"), (\"trans\", \"balance\"),\n",
-    "        (\"loan\", \"amount\"), (\"loan\", \"duration\"), (\"loan\", \"payments\")]\n",
-    "NUMS += [(\"district\", f\"A{i}\") for i in range(4, 17)]\n",
-    "num = {}\n",
-    "for t, c in NUMS:\n",
-    "    raw = T[t][c]\n",
-    "    v = pd.to_numeric(raw.str.strip(), errors=\"coerce\")\n",
-    "    num[(t, c)] = v\n",
-    "    bad = raw[v.isna() & ~is_blank(raw)].unique()[:5]\n",
-    "    say(f\"{t}.{c}: non-numeric={int((v.isna() & ~is_blank(raw)).sum())} \"\n",
-    "        f\"{list(bad) if len(bad) else ''}  min={v.min()}  max={v.max()}\")\n",
-    "\n",
-    "bal = num[(\"trans\", \"balance\")]\n",
-    "amt = num[(\"trans\", \"amount\")]\n",
-    "say(f\"\\nTransactions with negative balance after them: {int((bal < 0).sum())}\")\n",
-    "say(f\"Transactions with amount <= 0: {int((amt <= 0).sum())}\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"8. BUSINESS RULE CHECKS\")\n",
-    "la, ld, lp = num[(\"loan\", \"amount\")], num[(\"loan\", \"duration\")], num[(\"loan\", \"payments\")]\n",
-    "exact = ((la - lp * ld).abs() < 1).sum()\n",
-    "say(f\"Loans where amount = payments x duration (within 1 unit): {exact} of {len(loan)}\")\n",
-    "say(\"If this is all loans, the data contains no interest information.\")\n",
-    "\n",
-    "bn = T[\"client\"][\"birth_number\"].str.strip().str.zfill(6)\n",
-    "yy, mm, dd = bn.str[:2].astype(int), bn.str[2:4].astype(int), bn.str[4:6].astype(int)\n",
-    "female = mm > 50\n",
-    "month = mm.where(~female, mm - 50)\n",
-    "invalid = ~month.between(1, 12) | ~dd.between(1, 31)\n",
-    "say(f\"birth_number: female (month > 50)={int(female.sum())}  \"\n",
-    "    f\"male={int((~female).sum())}  invalid month/day={int(invalid.sum())}\")\n",
-    "say(f\"Birth years range: 19{yy.min():02d} to 19{yy.max():02d}\")\n",
-    "\n",
-    "uver_acc = T[\"trans\"].loc[T[\"trans\"][\"k_symbol\"].str.strip() == \"UVER\", \"account_id\"].unique()\n",
-    "say(f\"Accounts with loan-payment transactions ('UVER'): {len(uver_acc)}\")\n",
-    "say(f\"...of which have no loan record (anti-join): \"\n",
-    "    f\"{int((~pd.Series(uver_acc).isin(loan['account_id'])).sum())}\")\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "section(\"9. POINT-IN-TIME COVERAGE (history available before each loan)\")\n",
-    "L = loan[[\"loan_id\", \"account_id\", \"status\"]].copy()\n",
-    "L[\"loan_date\"] = parsed[(\"loan\", \"date\")]\n",
-    "A = acc[[\"account_id\"]].copy()\n",
-    "A[\"acc_date\"] = parsed[(\"account\", \"date\")]\n",
-    "L = L.merge(A, on=\"account_id\", how=\"left\")\n",
-    "L[\"days_acc_to_loan\"] = (L[\"loan_date\"] - L[\"acc_date\"]).dt.days\n",
-    "\n",
-    "tr = T[\"trans\"][[\"account_id\"]].copy()\n",
-    "tr[\"tdate\"] = parsed[(\"trans\", \"date\")]\n",
-    "tl = tr[tr[\"account_id\"].isin(L[\"account_id\"])].merge(\n",
-    "    L[[\"account_id\", \"loan_date\"]], on=\"account_id\")\n",
-    "before = tl[tl[\"tdate\"] < tl[\"loan_date\"]].groupby(\"account_id\").size()\n",
-    "after = tl[tl[\"tdate\"] >= tl[\"loan_date\"]].groupby(\"account_id\").size()\n",
-    "L[\"trans_before_loan\"] = L[\"account_id\"].map(before).fillna(0).astype(int)\n",
-    "L[\"trans_on_or_after_loan\"] = L[\"account_id\"].map(after).fillna(0).astype(int)\n",
-    "\n",
-    "say(\"Days from account opening to loan:\")\n",
-    "say(L[\"days_acc_to_loan\"].describe().round(1).to_string())\n",
-    "say(f\"\\nLoans with zero transactions before the loan date: \"\n",
-    "    f\"{int((L['trans_before_loan'] == 0).sum())}\")\n",
-    "say(\"Transactions before the loan date, per loan:\")\n",
-    "say(L[\"trans_before_loan\"].describe().round(1).to_string())\n",
-    "say(f\"\\nLast transaction date in the whole dataset: {tr['tdate'].max().date()}\")\n",
-    "say(\"\\nLoan status counts and median pre-loan history:\")\n",
-    "say(L.groupby(\"status\").agg(loans=(\"loan_id\", \"count\"),\n",
-    "                            median_days_acc_to_loan=(\"days_acc_to_loan\", \"median\"),\n",
-    "                            median_trans_before=(\"trans_before_loan\", \"median\"))\n",
-    "     .to_string())\n",
-    "\n",
-    "# --------------------------------------------------------------------------\n",
-    "with open(os.path.join(DOCS, \"data_quality_report.txt\"), \"w\", encoding=\"utf-8\") as f:\n",
-    "    f.write(\"\\n\".join(report))\n",
-    "print(\"\\nSaved docs/data_quality_report.txt and docs/column_profile.csv\")"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 2,
-   "id": "facf5c5f-e48c-4b10-92ce-78b9df1fc3b3",
-   "metadata": {
-    "scrolled": true
-   },
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "account   CRLF  has quotes  utf-8 OK\n",
-      "card      CRLF  has quotes  utf-8 OK\n",
-      "client    CRLF  has quotes  utf-8 OK\n",
-      "disp      CRLF  has quotes  utf-8 OK\n",
-      "district  CRLF  has quotes  utf-8 OK\n",
-      "loan      CRLF  has quotes  utf-8 OK\n",
-      "order     CRLF  has quotes  utf-8 OK\n",
-      "trans     CRLF  has quotes  utf-8 OK\n",
-      "\n",
-      "Copied to: C:\\BankData\\raw ['account.csv', 'card.csv', 'client.csv', 'disp.csv', 'district.csv', 'loan.csv', 'order.csv', 'trans.csv']\n"
-     ]
-    }
-   ],
-   "source": [
-    "import os, shutil\n",
-    "\n",
-    "src = os.path.join(\"data\", \"raw\")\n",
-    "dst = r\"C:\\BankData\\raw\"\n",
-    "os.makedirs(dst, exist_ok=True)\n",
-    "\n",
-    "for name in [\"account\", \"card\", \"client\", \"disp\", \"district\", \"loan\", \"order\", \"trans\"]:\n",
-    "    path = os.path.join(src, f\"{name}.csv\")\n",
-    "    with open(path, \"rb\") as fh:          # \"rb\" = read raw bytes, no interpretation\n",
-    "        data = fh.read()\n",
-    "\n",
-    "    endings = \"CRLF\" if b\"\\r\\n\" in data[:2000] else \"LF\"\n",
-    "    quoted  = \"has quotes\" if b'\"' in data[:2000] else \"no quotes\"\n",
-    "    try:\n",
-    "        data.decode(\"utf-8\")\n",
-    "        encoding = \"utf-8 OK\"\n",
-    "    except UnicodeDecodeError:\n",
-    "        encoding = \"NOT utf-8\"\n",
-    "\n",
-    "    shutil.copy2(path, os.path.join(dst, f\"{name}.csv\"))\n",
-    "    print(f\"{name:9s} {endings:5s} {quoted:11s} {encoding}\")\n",
-    "\n",
-    "print(\"\\nCopied to:\", dst, os.listdir(dst))"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.14.6"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+"""
+Step 2 - Data profiling and data-quality assessment for the Berka dataset.
+
+Input  : data/raw/<table>.csv   (semicolon-delimited, validated in Step 1b)
+Output : docs/data_quality_report.txt   (full printed report)
+         docs/column_profile.csv        (one row per table column)
+
+Run from the project root:
+    python scripts/02_profile_data.py
+"""
+
+import os
+
+import pandas as pd
+
+RAW = os.path.join("data", "raw")
+DOCS = "docs"
+os.makedirs(DOCS, exist_ok=True)
+
+TABLES = ["account", "client", "disp", "order", "trans", "loan", "card", "district"]
+PKS = {"account": "account_id", "client": "client_id", "disp": "disp_id",
+       "order": "order_id", "trans": "trans_id", "loan": "loan_id",
+       "card": "card_id", "district": "A1"}
+
+report = []
+
+
+def say(line=""):
+    print(line)
+    report.append(str(line))
+
+
+def section(title):
+    say()
+    say("=" * 70)
+    say(title)
+    say("=" * 70)
+
+
+def load(name):
+    # Everything as text: nothing is converted silently before we look at it.
+    return pd.read_csv(os.path.join(RAW, f"{name}.csv"), sep=";", dtype=str,
+                       keep_default_na=False)
+
+
+def parse_yymmdd(s):
+    """Parse YYMMDD text (optionally followed by a time) into a date."""
+    return pd.to_datetime("19" + s.str.strip().str[:6], format="%Y%m%d",
+                          errors="coerce")
+
+
+def is_blank(s):
+    return s.str.strip() == ""
+
+
+T = {name: load(name) for name in TABLES}
+
+# --------------------------------------------------------------------------
+section("1. COLUMN PROFILE (blank = empty or spaces; '?' = explicit unknown)")
+rows = []
+for name, df in T.items():
+    for col in df.columns:
+        s = df[col]
+        top = s.replace("", "<blank>").value_counts().head(3)
+        rows.append({
+            "table": name,
+            "column": col,
+            "rows": len(s),
+            "blank": int(is_blank(s).sum()),
+            "question_mark": int((s.str.strip() == "?").sum()),
+            "distinct": int(s.nunique()),
+            "top_values": "; ".join(f"{k} ({v})" for k, v in top.items()),
+        })
+profile = pd.DataFrame(rows)
+profile.to_csv(os.path.join(DOCS, "column_profile.csv"), index=False)
+issues = profile[(profile["blank"] > 0) | (profile["question_mark"] > 0)]
+say("Columns with blank or '?' values:")
+say(issues[["table", "column", "rows", "blank", "question_mark"]].to_string(index=False)
+    if len(issues) else "None")
+say("Full per-column profile saved to docs/column_profile.csv")
+
+# --------------------------------------------------------------------------
+section("2. PRIMARY KEYS AND DUPLICATE ROWS")
+for name, pk in PKS.items():
+    df = T[name]
+    dup_pk = int(df[pk].duplicated().sum())
+    dup_rest = int(df.drop(columns=pk).duplicated().sum())
+    say(f"{name:9s} key={pk:11s} duplicate keys={dup_pk:<6} "
+        f"rows identical apart from the key={dup_rest}")
+say("Note: identical rows apart from the key are not automatically errors "
+    "(e.g. two equal payments on one day). They are flagged for review.")
+
+# --------------------------------------------------------------------------
+section("3. REFERENTIAL INTEGRITY (orphans = child rows with no parent)")
+FKS = [("account", "district_id", "district", "A1"),
+       ("client", "district_id", "district", "A1"),
+       ("disp", "client_id", "client", "client_id"),
+       ("disp", "account_id", "account", "account_id"),
+       ("order", "account_id", "account", "account_id"),
+       ("trans", "account_id", "account", "account_id"),
+       ("loan", "account_id", "account", "account_id"),
+       ("card", "disp_id", "disp", "disp_id")]
+for child, ccol, parent, pcol in FKS:
+    orphans = int((~T[child][ccol].isin(T[parent][pcol])).sum())
+    say(f"{child}.{ccol} -> {parent}.{pcol}: orphans={orphans}")
+
+# --------------------------------------------------------------------------
+section("4. CARDINALITY (join fan-out risks)")
+acc, disp, loan, card = T["account"], T["disp"], T["loan"], T["card"]
+
+loans_per_acc = loan.groupby("account_id").size()
+say(f"Max loans per account: {loans_per_acc.max()} "
+    f"(documentation says at most 1)")
+
+say("Disposition types: " + disp["type"].value_counts().to_dict().__repr__())
+owners = disp[disp["type"].str.upper() == "OWNER"]
+owners_per_acc = owners.groupby("account_id").size()
+say(f"Accounts with exactly 1 owner: {(owners_per_acc == 1).sum()} of {len(acc)}")
+say(f"Accounts with more than 1 owner: {(owners_per_acc > 1).sum()}")
+say(f"Accounts with no owner: {(~acc['account_id'].isin(owners['account_id'])).sum()}")
+
+disp_per_acc = disp.groupby("account_id").size().value_counts().sort_index()
+say("Accounts by number of linked clients (owner + users): "
+    + disp_per_acc.to_dict().__repr__())
+say(f"Clients who own more than one account: "
+    f"{(owners.groupby('client_id').size() > 1).sum()}")
+say(f"Max cards per disposition: {card.groupby('disp_id').size().max()}")
+say(f"Cards issued to non-owner dispositions: "
+    f"{(~card['disp_id'].isin(owners['disp_id'])).sum()}")
+
+# --------------------------------------------------------------------------
+section("5. CATEGORY VALUES (counts, blanks shown as <blank>)")
+CATS = [("account", "frequency"), ("disp", "type"), ("trans", "type"),
+        ("trans", "operation"), ("trans", "k_symbol"), ("order", "k_symbol"),
+        ("loan", "status"), ("loan", "duration"), ("card", "type"),
+        ("district", "A3")]
+for t, c in CATS:
+    vc = T[t][c].replace("", "<blank>").value_counts()
+    say(f"{t}.{c}: " + ", ".join(f"'{k}'={v}" for k, v in vc.items()))
+
+# --------------------------------------------------------------------------
+section("6. DATES (format, unparseable values, range)")
+DATES = [("account", "date"), ("trans", "date"), ("loan", "date"), ("card", "issued")]
+parsed = {}
+for t, c in DATES:
+    raw = T[t][c]
+    d = parse_yymmdd(raw)
+    parsed[(t, c)] = d
+    lengths = raw.str.len().value_counts().to_dict()
+    say(f"{t}.{c}: text lengths={lengths}  unparseable={int(d.isna().sum())}  "
+        f"min={d.min().date()}  max={d.max().date()}")
+
+# --------------------------------------------------------------------------
+section("7. NUMERIC COLUMNS (non-numeric text, min, max)")
+NUMS = [("order", "amount"), ("trans", "amount"), ("trans", "balance"),
+        ("loan", "amount"), ("loan", "duration"), ("loan", "payments")]
+NUMS += [("district", f"A{i}") for i in range(4, 17)]
+num = {}
+for t, c in NUMS:
+    raw = T[t][c]
+    v = pd.to_numeric(raw.str.strip(), errors="coerce")
+    num[(t, c)] = v
+    bad = raw[v.isna() & ~is_blank(raw)].unique()[:5]
+    say(f"{t}.{c}: non-numeric={int((v.isna() & ~is_blank(raw)).sum())} "
+        f"{list(bad) if len(bad) else ''}  min={v.min()}  max={v.max()}")
+
+bal = num[("trans", "balance")]
+amt = num[("trans", "amount")]
+say(f"\nTransactions with negative balance after them: {int((bal < 0).sum())}")
+say(f"Transactions with amount <= 0: {int((amt <= 0).sum())}")
+
+# --------------------------------------------------------------------------
+section("8. BUSINESS RULE CHECKS")
+la, ld, lp = num[("loan", "amount")], num[("loan", "duration")], num[("loan", "payments")]
+exact = ((la - lp * ld).abs() < 1).sum()
+say(f"Loans where amount = payments x duration (within 1 unit): {exact} of {len(loan)}")
+say("If this is all loans, the data contains no interest information.")
+
+bn = T["client"]["birth_number"].str.strip().str.zfill(6)
+yy, mm, dd = bn.str[:2].astype(int), bn.str[2:4].astype(int), bn.str[4:6].astype(int)
+female = mm > 50
+month = mm.where(~female, mm - 50)
+invalid = ~month.between(1, 12) | ~dd.between(1, 31)
+say(f"birth_number: female (month > 50)={int(female.sum())}  "
+    f"male={int((~female).sum())}  invalid month/day={int(invalid.sum())}")
+say(f"Birth years range: 19{yy.min():02d} to 19{yy.max():02d}")
+
+uver_acc = T["trans"].loc[T["trans"]["k_symbol"].str.strip() == "UVER", "account_id"].unique()
+say(f"Accounts with loan-payment transactions ('UVER'): {len(uver_acc)}")
+say(f"...of which have no loan record (anti-join): "
+    f"{int((~pd.Series(uver_acc).isin(loan['account_id'])).sum())}")
+
+# --------------------------------------------------------------------------
+section("9. POINT-IN-TIME COVERAGE (history available before each loan)")
+L = loan[["loan_id", "account_id", "status"]].copy()
+L["loan_date"] = parsed[("loan", "date")]
+A = acc[["account_id"]].copy()
+A["acc_date"] = parsed[("account", "date")]
+L = L.merge(A, on="account_id", how="left")
+L["days_acc_to_loan"] = (L["loan_date"] - L["acc_date"]).dt.days
+
+tr = T["trans"][["account_id"]].copy()
+tr["tdate"] = parsed[("trans", "date")]
+tl = tr[tr["account_id"].isin(L["account_id"])].merge(
+    L[["account_id", "loan_date"]], on="account_id")
+before = tl[tl["tdate"] < tl["loan_date"]].groupby("account_id").size()
+after = tl[tl["tdate"] >= tl["loan_date"]].groupby("account_id").size()
+L["trans_before_loan"] = L["account_id"].map(before).fillna(0).astype(int)
+L["trans_on_or_after_loan"] = L["account_id"].map(after).fillna(0).astype(int)
+
+say("Days from account opening to loan:")
+say(L["days_acc_to_loan"].describe().round(1).to_string())
+say(f"\nLoans with zero transactions before the loan date: "
+    f"{int((L['trans_before_loan'] == 0).sum())}")
+say("Transactions before the loan date, per loan:")
+say(L["trans_before_loan"].describe().round(1).to_string())
+say(f"\nLast transaction date in the whole dataset: {tr['tdate'].max().date()}")
+say("\nLoan status counts and median pre-loan history:")
+say(L.groupby("status").agg(loans=("loan_id", "count"),
+                            median_days_acc_to_loan=("days_acc_to_loan", "median"),
+                            median_trans_before=("trans_before_loan", "median"))
+     .to_string())
+
+# --------------------------------------------------------------------------
+with open(os.path.join(DOCS, "data_quality_report.txt"), "w", encoding="utf-8") as f:
+    f.write("\n".join(report))
+print("\nSaved docs/data_quality_report.txt and docs/column_profile.csv")

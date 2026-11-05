@@ -71,6 +71,7 @@ Kaggle CSVs ──► Python (validate, profile) ──► SQL Server 2025 Expre
 ├── scripts/
 │   ├── 01b_validate_raw.py      # row counts vs documentation
 │   ├── 02_profile_data.py       # keys, orphans, cardinality, categories, dates, business rules
+│   ├── 03_check_and_copy_for_sql.py  # file format check + copy for BULK INSERT
 │   └── 05_export_mart.py        # SQL Server → CSV, with validation of the written file
 ├── sql/
 │   ├── 03a_create_staging.sql   # database, schemas, all-text staging tables
@@ -212,10 +213,10 @@ navigation buttons, and a clean default state for Tableau Public's Revert.
 
 1. Download the 8 CSVs from the Kaggle dataset into `data/raw/`.
 2. `python scripts/01b_validate_raw.py` and `python scripts/02_profile_data.py`.
-3. Copy the CSVs to `C:\BankData\raw` (readable by the SQL Server service), then run in SSMS in order:
+3. `python scripts/03_check_and_copy_for_sql.py` (copies the CSVs to `C:\BankData\raw`, readable by the SQL Server service), then run in SSMS in order:
    `03a` → `03b` → `03c` → `03d_build_core_trans` → `04_build_mart`
    (the two `03d` investigation scripts are read-only and optional).
-4. `python scripts/05_export_mart.py` (set `SERVER` to your instance).
+4. `python scripts/05_export_mart.py` (uses `localhost\SQLEXPRESS`; for another instance set the `SQL_SERVER` environment variable, e.g. `set SQL_SERVER=MYPC\SQLEXPRESS`).
 5. Open the workbook from Tableau Public, or connect Tableau to `data/processed/loan_features.csv`.
 
 Each script ends with validation queries and the expected results.
